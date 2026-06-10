@@ -1,0 +1,59 @@
+name: SoulHolo
+version: '${version}'
+main: bm.b0b0b0.soulHolo.SoulHolo
+api-version: '1.21'
+authors: [ b0b0b0 ]
+depend:
+  - WorldGuard
+softdepend:
+  - DecentHolograms
+  - FancyHolograms
+  - PlaceholderAPI
+libraries:
+  - net.elytrium:serializer:1.1.1
+commands:
+  dholo:
+    description: Private donate holograms
+    usage: /dholo <create|add|remove|edit|gui|admin>
+    permission: soulholo.use
+permissions:
+  soulholo.use:
+    default: true
+  soulholo.admin:
+    default: op
+  soulholo.gui:
+    default: true
+  soulholo.gui.lines:
+    default: true
+  soulholo.gui.position:
+    default: true
+  soulholo.limit.default:
+    default: true
+  soulholo.limit.vip:
+    default: false
+  soulholo.limit.premium:
+    default: false
+  soulholo.gui.setting.enabled:
+    default: true
+  soulholo.gui.setting.see-through:
+    default: false
+  soulholo.gui.setting.text-shadow:
+    default: true
+  soulholo.gui.setting.billboard:
+    default: true
+  soulholo.gui.setting.background:
+    default: false
+  soulholo.gui.setting.scale:
+    default: false
+  soulholo.gui.setting.text-alignment:
+    default: false
+  soulholo.gui.setting.shadow:
+    default: false
+  soulholo.gui.bg.transparent:
+    default: true
+  soulholo.gui.bg.dark:
+    default: false
+  soulholo.gui.bg.blue:
+    default: false
+  soulholo.gui.bg.gold:
+    default: false
