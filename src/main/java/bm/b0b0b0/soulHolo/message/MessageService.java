@@ -21,7 +21,7 @@ import java.util.logging.Level;
 
 public final class MessageService {
 
-    private static final int MESSAGES_VERSION = 3;
+    private static final int MESSAGES_VERSION = 13;
 
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.builder()
             .character('&')

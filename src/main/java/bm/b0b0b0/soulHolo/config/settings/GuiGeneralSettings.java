@@ -37,7 +37,7 @@ public final class GuiGeneralSettings extends YamlSerializable {
     public static final class MaterialFallbackSettings {
         public String entry = "PAINTING";
         public String filler = "GRAY_STAINED_GLASS_PANE";
-        public String button = "PAPER";
+        public String button = "LIGHT_GRAY_DYE";
         public String locked = "BARRIER";
     }
 
@@ -57,7 +57,6 @@ public final class GuiGeneralSettings extends YamlSerializable {
             map.put("entry", "PAINTING");
             map.put("previous", "ARROW");
             map.put("next", "ARROW");
-            map.put("close", "BARRIER");
             map.put("filler", "GRAY_STAINED_GLASS_PANE");
             map.put("empty", "STRUCTURE_VOID");
             return map;
@@ -68,7 +67,7 @@ public final class GuiGeneralSettings extends YamlSerializable {
         public List<Integer> content = defaultContent();
         public int previous = 45;
         public int next = 53;
-        public int close = 49;
+        public int empty = 22;
         public int filler = 40;
 
         private static List<Integer> defaultContent() {
@@ -111,22 +110,20 @@ public final class GuiGeneralSettings extends YamlSerializable {
         private static Map<String, String> defaultMaterials() {
             Map<String, String> map = new LinkedHashMap<>();
             map.put("enabled-on", "LIME_DYE");
-            map.put("lines", "WRITABLE_BOOK");
+            map.put("lines", "LIME_DYE");
             map.put("position", "ENDER_EYE");
             map.put("enabled-off", "RED_DYE");
-            map.put("see-through-on", "SPYGLASS");
-            map.put("see-through-off", "GLASS");
-            map.put("text-shadow-on", "BLACK_CANDLE");
-            map.put("text-shadow-off", "CANDLE");
-            map.put("billboard", "END_CRYSTAL");
+            map.put("see-through-on", "CYAN_DYE");
+            map.put("see-through-off", "GRAY_DYE");
+            map.put("text-shadow-on", "BLACK_DYE");
+            map.put("text-shadow-off", "LIGHT_GRAY_DYE");
             map.put("background", "PAINTING");
             map.put("scale-down", "IRON_NUGGET");
             map.put("scale-up", "GOLD_NUGGET");
             map.put("alignment", "OAK_SIGN");
             map.put("shadow", "SOUL_LANTERN");
-            map.put("lines", "WRITABLE_BOOK");
-            map.put("back", "ARROW");
-            map.put("close", "BARRIER");
+            map.put("delete", "RED_DYE");
+            map.put("back", "LIGHT_GRAY_DYE");
             map.put("locked", "BARRIER");
             map.put("filler", "GRAY_STAINED_GLASS_PANE");
             return map;
@@ -139,21 +136,23 @@ public final class GuiGeneralSettings extends YamlSerializable {
         public int enabled = 10;
         public int seeThrough = 12;
         public int textShadow = 14;
-        public int billboard = 16;
         public int background = 20;
         public int scaleDown = 22;
         public int scaleUp = 24;
         public int alignment = 30;
         public int shadow = 32;
-        public int back = 39;
-        public int close = 41;
+        public int delete = 19;
+        public int back = 36;
         public int filler = 40;
     }
 
     public static final class LinesScreenSettings {
         public int size = 54;
         public String title = "gui.lines.title";
+        public int confirmSize = 27;
+        public String confirmTitle = "gui.lines.delete-confirm.title";
         public LinesScreenSlotsSettings slots = new LinesScreenSlotsSettings();
+        public LinesConfirmSlotsSettings confirm = new LinesConfirmSlotsSettings();
         public Map<String, String> materials = defaultMaterials();
 
         public static LinesScreenSettings defaults() {
@@ -162,24 +161,34 @@ public final class GuiGeneralSettings extends YamlSerializable {
 
         private static Map<String, String> defaultMaterials() {
             Map<String, String> map = new LinkedHashMap<>();
-            map.put("entry", "PAPER");
-            map.put("add", "WRITABLE_BOOK");
-            map.put("previous", "ARROW");
-            map.put("next", "ARROW");
-            map.put("back", "ARROW");
-            map.put("close", "BARRIER");
+            map.put("entry", "LIME_DYE");
+            map.put("entry-hidden", "PURPLE_DYE");
+            map.put("empty", "GRAY_DYE");
+            map.put("confirm-yes", "LIME_DYE");
+            map.put("confirm-no", "RED_DYE");
+            map.put("previous", "LIGHT_GRAY_DYE");
+            map.put("next", "LIGHT_GRAY_DYE");
+            map.put("back", "LIGHT_GRAY_DYE");
+            map.put("reserved-shown", "LIME_DYE");
+            map.put("reserved-hidden", "GRAY_DYE");
             map.put("filler", "GRAY_STAINED_GLASS_PANE");
             return map;
         }
     }
 
+    public static final class LinesConfirmSlotsSettings {
+        public int info = 13;
+        public int yes = 11;
+        public int no = 15;
+    }
+
     public static final class LinesScreenSlotsSettings {
+        public int hintToggle = 3;
+        public int ownerToggle = 4;
         public List<Integer> content = defaultContent();
-        public int add = 49;
         public int previous = 45;
         public int next = 53;
-        public int back = 47;
-        public int close = 51;
+        public int back = 36;
 
         private static List<Integer> defaultContent() {
             List<Integer> slots = new ArrayList<>();
@@ -225,8 +234,8 @@ public final class GuiGeneralSettings extends YamlSerializable {
             map.put("down", "ANVIL");
             map.put("left", "ARROW");
             map.put("right", "SPECTRAL_ARROW");
-            map.put("back", "ARROW");
-            map.put("close", "BARRIER");
+            map.put("billboard", "END_CRYSTAL");
+            map.put("back", "LIGHT_GRAY_DYE");
             map.put("filler", "GRAY_STAINED_GLASS_PANE");
             return map;
         }
@@ -235,10 +244,10 @@ public final class GuiGeneralSettings extends YamlSerializable {
     public static final class PositionScreenSlotsSettings {
         public int up = 13;
         public int down = 31;
-        public int left = 11;
-        public int right = 15;
+        public int left = 21;
+        public int right = 23;
         public int center = 22;
-        public int back = 39;
-        public int close = 41;
+        public int billboard = 4;
+        public int back = 36;
     }
 }

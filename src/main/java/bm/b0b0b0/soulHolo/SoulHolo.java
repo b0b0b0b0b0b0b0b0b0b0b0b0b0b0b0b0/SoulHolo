@@ -15,7 +15,9 @@ import bm.b0b0b0.soulHolo.integration.PlaceholderBridge;
 import bm.b0b0b0.soulHolo.integration.RegionGuard;
 import bm.b0b0b0.soulHolo.integration.WorldGuardRegionGuard;
 import bm.b0b0b0.soulHolo.listener.GuiListener;
+import bm.b0b0b0.soulHolo.listener.HologramInteractListener;
 import bm.b0b0b0.soulHolo.listener.LineEditChatListener;
+import bm.b0b0b0.soulHolo.listener.RegionGuardCleanupListener;
 import bm.b0b0b0.soulHolo.message.MessageService;
 import bm.b0b0b0.soulHolo.repository.HologramRepository;
 import bm.b0b0b0.soulHolo.repository.YamlHologramRepository;
@@ -55,6 +57,7 @@ public final class SoulHolo extends JavaPlugin implements PluginConfigHolder {
     private DholoPlayerActions dholoPlayerActions;
     private DholoCommandRegistry dholoCommandRegistry;
     private DholoCommand dholoCommand;
+    private RegionGuardCleanupListener regionGuardCleanupListener;
 
     @Override
     public void onEnable() {
@@ -99,7 +102,7 @@ public final class SoulHolo extends JavaPlugin implements PluginConfigHolder {
                 actionLogService
         );
 
-        displaySettingAccess = new DisplaySettingAccess(pluginConfig, hologramBackend, messageService);
+        displaySettingAccess = new DisplaySettingAccess(pluginConfig, hologramBackend, messageService, limitService);
         hologramDisplayService = new HologramDisplayService(
                 pluginConfig,
                 hologramService,
@@ -148,6 +151,11 @@ public final class SoulHolo extends JavaPlugin implements PluginConfigHolder {
         );
 
         getServer().getPluginManager().registerEvents(new GuiListener(), this);
+        getServer().getPluginManager().registerEvents(new HologramInteractListener(
+                hologramService,
+                guiNavigationService,
+                messageService
+        ), this);
         getServer().getPluginManager().registerEvents(new LineEditChatListener(
                 this,
                 hologramLineGuiService,
@@ -156,6 +164,9 @@ public final class SoulHolo extends JavaPlugin implements PluginConfigHolder {
                 sessionService
         ), this);
 
+        regionGuardCleanupListener = new RegionGuardCleanupListener(this, this, hologramService);
+        regionGuardCleanupListener.start();
+
         int batchSize = pluginConfig.restoreBatchSize();
         hologramRepository.loadAll().whenComplete((unused, error) -> {
             if (error != null) {
@@ -163,6 +174,7 @@ public final class SoulHolo extends JavaPlugin implements PluginConfigHolder {
                 return;
             }
             getServer().getScheduler().runTask(this, () -> {
+                hologramService.purgeMissingRegions();
                 if (hologramBackend.available()) {
                     hologramService.restoreAll(batchSize);
                     getLogger().info("Loaded " + hologramRepository.all().size() + " holograms using " + hologramBackend.id());
@@ -176,6 +188,9 @@ public final class SoulHolo extends JavaPlugin implements PluginConfigHolder {
 
     @Override
     public void onDisable() {
+        if (regionGuardCleanupListener != null) {
+            regionGuardCleanupListener.stop();
+        }
         if (hologramService != null) {
             hologramService.shutdown();
         }
@@ -206,6 +221,13 @@ public final class SoulHolo extends JavaPlugin implements PluginConfigHolder {
         hologramDisplayService.reload(pluginConfig, actionLogService);
         guiItemFactory.reload(pluginConfig.guiLayout());
         guiNavigationService.reload(pluginConfig.guiLayout());
+        if (regionGuardCleanupListener != null) {
+            regionGuardCleanupListener.start();
+        }
+        hologramService.purgeMissingRegions();
+        if (resolvedBackend.available()) {
+            hologramService.restoreAll();
+        }
     }
 
     @Override

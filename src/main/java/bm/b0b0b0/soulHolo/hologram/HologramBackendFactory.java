@@ -13,6 +13,7 @@ public final class HologramBackendFactory {
     }
 
     public static HologramBackend resolve(PluginConfig config) {
+        configurePaper(config);
         PluginConfig.HologramBackendType type = config.backendType();
         if (type == PluginConfig.HologramBackendType.PAPER) {
             return PAPER;
@@ -47,5 +48,9 @@ public final class HologramBackendFactory {
 
     public static boolean anyAvailable() {
         return true;
+    }
+
+    public static void configurePaper(PluginConfig config) {
+        PAPER.configureClickHitbox(config.clickWidth(), config.clickHeight(), config.clickHeightPerLine());
     }
 }

@@ -40,8 +40,7 @@ public final class DholoPlayerActions {
 
     public HologramFailure openGui(Player player, String hologramName) {
         if (hologramName == null || hologramName.isBlank()) {
-            navigation.openList(player, 0);
-            return HologramFailure.NONE;
+            return GuiNavigationService.toFailure(navigation.openList(player, 0));
         }
         Optional<PrivateHologram> optional = hologramService.findByName(hologramName.toLowerCase(Locale.ROOT));
         if (optional.isEmpty()) {
@@ -51,8 +50,7 @@ public final class DholoPlayerActions {
         if (!hologram.ownerId().equals(player.getUniqueId()) && !access.isAdmin(player)) {
             return HologramFailure.NOT_OWNED;
         }
-        navigation.openSettings(player, hologram);
-        return HologramFailure.NONE;
+        return GuiNavigationService.toFailure(navigation.openSettings(player, hologram));
     }
 
     public HologramFailure movePosition(Player player, RelativeMoveDirection direction, String hologramName, boolean admin) {
@@ -193,7 +191,7 @@ public final class DholoPlayerActions {
             case "enabled", "visible", "visibility", "видимость" -> DisplaySettingKey.ENABLED;
             case "see-through", "seethrough", "see", "сквозь" -> DisplaySettingKey.SEE_THROUGH;
             case "text-shadow", "textshadow", "shadow-text", "тень-текста" -> DisplaySettingKey.TEXT_SHADOW;
-            case "billboard", "поворот" -> DisplaySettingKey.BILLBOARD;
+            case "billboard", "поворот", "rotation" -> DisplaySettingKey.BILLBOARD;
             case "background", "bg", "фон" -> DisplaySettingKey.BACKGROUND;
             case "scale", "масштаб" -> DisplaySettingKey.SCALE;
             case "alignment", "align", "выравнивание" -> DisplaySettingKey.TEXT_ALIGNMENT;

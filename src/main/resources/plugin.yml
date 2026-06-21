@@ -15,45 +15,34 @@ commands:
   dholo:
     description: Private donate holograms
     usage: /dholo <create|add|remove|edit|gui|admin>
-    permission: soulholo.use
 permissions:
-  soulholo.use:
-    default: true
   soulholo.admin:
     default: op
-  soulholo.gui:
-    default: true
+    children:
+      soulholo.gui.lines: true
+      soulholo.gui.position: true
+      soulholo.gui.setting.enabled: true
+      soulholo.gui.setting.see-through: true
+      soulholo.gui.setting.text-shadow: true
+      soulholo.gui.setting.billboard: true
+      soulholo.gui.setting.background: true
   soulholo.gui.lines:
     default: true
   soulholo.gui.position:
     default: true
-  soulholo.limit.default:
-    default: true
-  soulholo.limit.vip:
-    default: false
-  soulholo.limit.premium:
-    default: false
   soulholo.gui.setting.enabled:
     default: true
   soulholo.gui.setting.see-through:
-    default: false
+    default: true
   soulholo.gui.setting.text-shadow:
     default: true
   soulholo.gui.setting.billboard:
     default: true
   soulholo.gui.setting.background:
-    default: false
+    default: true
   soulholo.gui.setting.scale:
     default: false
   soulholo.gui.setting.text-alignment:
     default: false
   soulholo.gui.setting.shadow:
-    default: false
-  soulholo.gui.bg.transparent:
-    default: true
-  soulholo.gui.bg.dark:
-    default: false
-  soulholo.gui.bg.blue:
-    default: false
-  soulholo.gui.bg.gold:
     default: false

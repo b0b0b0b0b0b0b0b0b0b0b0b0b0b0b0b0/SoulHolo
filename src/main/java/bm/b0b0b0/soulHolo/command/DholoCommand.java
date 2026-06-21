@@ -22,6 +22,10 @@ public final class DholoCommand implements CommandExecutor, TabCompleter {
             context.messages().send(sender, "unknown-subcommand");
             return true;
         }
+        if (!context.hasAccess()) {
+            context.messages().send(sender, "hologram-limit-denied");
+            return true;
+        }
         return registry.find(args[0])
                 .map(subcommand -> subcommand.execute(context))
                 .orElseGet(() -> {

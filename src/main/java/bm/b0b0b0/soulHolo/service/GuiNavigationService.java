@@ -1,16 +1,19 @@
 package bm.b0b0b0.soulHolo.service;
 
 import bm.b0b0b0.soulHolo.config.GuiLayoutConfig;
+import bm.b0b0b0.soulHolo.gui.HologramLineDeleteConfirmMenu;
 import bm.b0b0b0.soulHolo.gui.HologramLinesMenu;
 import bm.b0b0b0.soulHolo.gui.HologramListMenu;
 import bm.b0b0b0.soulHolo.gui.HologramPositionMenu;
 import bm.b0b0b0.soulHolo.gui.HologramSettingsMenu;
 import bm.b0b0b0.soulHolo.gui.item.GuiItemFactory;
 import bm.b0b0b0.soulHolo.message.MessageService;
+import bm.b0b0b0.soulHolo.model.DisplaySettingKey;
 import bm.b0b0b0.soulHolo.model.PrivateHologram;
 import org.bukkit.entity.Player;
 
 import java.util.List;
+import java.util.Map;
 
 public final class GuiNavigationService {
 
@@ -45,16 +48,11 @@ public final class GuiNavigationService {
         this.layoutConfig = layoutConfig;
     }
 
-    public void openList(Player player, int page) {
+    public GuiOpenResult openList(Player player, int page) {
         if (!access.canOpenGui(player)) {
-            messages.send(player, "gui-no-permission");
-            return;
+            return GuiOpenResult.NO_PERMISSION;
         }
         List<PrivateHologram> owned = hologramService.ownedHolograms(player);
-        if (owned.isEmpty()) {
-            messages.send(player, "gui-no-holograms");
-            return;
-        }
         HologramListMenu menu = new HologramListMenu(
                 player,
                 messages,
@@ -65,13 +63,12 @@ public final class GuiNavigationService {
                 page
         );
         menu.open();
-        messages.send(player, "gui-opened");
+        return GuiOpenResult.OPENED;
     }
 
-    public void openSettings(Player player, PrivateHologram hologram) {
+    public GuiOpenResult openSettings(Player player, PrivateHologram hologram) {
         if (!access.canOpenGui(player)) {
-            messages.send(player, "gui-no-permission");
-            return;
+            return GuiOpenResult.NO_PERMISSION;
         }
         HologramSettingsMenu menu = new HologramSettingsMenu(
                 player,
@@ -84,12 +81,12 @@ public final class GuiNavigationService {
                 this
         );
         menu.open();
+        return GuiOpenResult.OPENED;
     }
 
-    public void openLines(Player player, PrivateHologram hologram, int page) {
+    public GuiOpenResult openLines(Player player, PrivateHologram hologram, int page) {
         if (!lineGuiService.canEdit(player)) {
-            messages.send(player, "gui-lines-no-permission");
-            return;
+            return GuiOpenResult.NO_PERMISSION;
         }
         HologramLinesMenu menu = new HologramLinesMenu(
                 player,
@@ -102,16 +99,41 @@ public final class GuiNavigationService {
                 page
         );
         menu.open();
+        return GuiOpenResult.OPENED;
+    }
+
+    public GuiOpenResult openLineDeleteConfirm(Player player, PrivateHologram hologram, int lineNumber, int returnPage) {
+        if (!lineGuiService.canEdit(player)) {
+            return GuiOpenResult.NO_PERMISSION;
+        }
+        if (!lineGuiService.hasLineContent(hologram, lineNumber)) {
+            return openLines(player, hologram, returnPage);
+        }
+        HologramLineDeleteConfirmMenu menu = new HologramLineDeleteConfirmMenu(
+                player,
+                hologram,
+                lineNumber,
+                returnPage,
+                messages,
+                items,
+                layoutConfig.linesDeleteConfirm(),
+                this,
+                lineGuiService
+        );
+        menu.open();
+        return GuiOpenResult.OPENED;
     }
 
     public int maxLinesFor(Player player) {
         return lineGuiService.maxLines(player);
     }
 
-    public void openPosition(Player player, PrivateHologram hologram) {
-        if (!positionGuiService.canMove(player)) {
-            messages.send(player, "gui-position-no-permission");
-            return;
+    public GuiOpenResult openPosition(Player player, PrivateHologram hologram) {
+        boolean canMove = positionGuiService.canMove(player);
+        boolean canRotate = access.canChange(player, DisplaySettingKey.BILLBOARD)
+                && access.isSupported(DisplaySettingKey.BILLBOARD);
+        if (!canMove && !canRotate) {
+            return GuiOpenResult.NO_PERMISSION;
         }
         HologramPositionMenu menu = new HologramPositionMenu(
                 player,
@@ -120,8 +142,32 @@ public final class GuiNavigationService {
                 items,
                 layoutConfig.position(),
                 this,
-                positionGuiService
+                positionGuiService,
+                displayService,
+                access
         );
         menu.open();
+        return GuiOpenResult.OPENED;
+    }
+
+    public GuiOpenResult deleteHologram(Player player, PrivateHologram hologram) {
+        if (!hologramService.canManage(player, hologram)) {
+            return GuiOpenResult.NOT_OWNED;
+        }
+        HologramFailure failure = hologramService.deleteOwnedHologram(player, hologram, access.isAdmin(player));
+        if (failure != HologramFailure.NONE) {
+            return GuiOpenResult.NOT_OWNED;
+        }
+        messages.send(player, "hologram-deleted", Map.of("name", hologram.name()));
+        return openList(player, 0);
+    }
+
+    public static HologramFailure toFailure(GuiOpenResult result) {
+        return switch (result) {
+            case OPENED -> HologramFailure.NONE;
+            case NO_PERMISSION -> HologramFailure.GUI_NO_PERMISSION;
+            case NOT_FOUND -> HologramFailure.NOT_FOUND;
+            case NOT_OWNED -> HologramFailure.NOT_OWNED;
+        };
     }
 }

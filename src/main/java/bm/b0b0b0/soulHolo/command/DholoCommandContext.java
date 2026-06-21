@@ -2,6 +2,7 @@ package bm.b0b0b0.soulHolo.command;
 
 import bm.b0b0b0.soulHolo.SoulHolo;
 import bm.b0b0b0.soulHolo.config.PluginConfigHolder;
+import bm.b0b0b0.soulHolo.permission.SoulHoloPermissions;
 import bm.b0b0b0.soulHolo.message.MessageService;
 import bm.b0b0b0.soulHolo.service.HologramService;
 import org.bukkit.command.Command;
@@ -106,11 +107,16 @@ public final class DholoCommandContext {
         return sender instanceof Player player ? Optional.of(player) : Optional.empty();
     }
 
-    public boolean hasUsePermission() {
-        return sender.hasPermission(config.pluginConfig().usePermission());
+    public boolean hasAccess() {
+        if (SoulHoloPermissions.hasAdmin(sender)) {
+            return true;
+        }
+        return player()
+                .map(hologramService::hasHologramSlot)
+                .orElse(false);
     }
 
     public boolean hasAdminPermission() {
-        return sender.hasPermission(config.pluginConfig().adminPermission());
+        return SoulHoloPermissions.hasAdmin(sender);
     }
 }

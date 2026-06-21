@@ -1,5 +1,5 @@
 _meta:
-  version: 3
+  version: 13
 
 prefix: "&#4A3060[&#B865FFSoulHolo&#4A3060] &r"
 
@@ -25,6 +25,7 @@ backend-missing: "{prefix}&#FF5555Backend недоступен. &#E0B0FFconfig.y
 worldguard-missing: "{prefix}&#FF5555WorldGuard не найден — голограммы недоступны."
 not-owner-region: "{prefix}&#FF5555Голограмму можно ставить только в регионе, где вы владелец."
 no-applicable-region: "{prefix}&#FF5555Здесь нет региона WorldGuard."
+hologram-limit-denied: "{prefix}&#FF5555Нет доступа к голограммам. Выдайте &#FFFFFFsoulholo.limit.<N>"
 region-limit-reached: "{prefix}&#FF5555Лимит в регионе &#B865FF{region}&#FF5555: &#FFFFFF{limit}"
 line-limit-reached: "{prefix}&#FF5555Лимит строк: &#FFFFFF{limit}"
 line-too-long: "{prefix}&#FF5555Строка длиннее &#FFFFFF{limit} &#FF5555символов."
@@ -33,7 +34,9 @@ invalid-name: "{prefix}&#FF5555Недопустимое название. Дли
 name-taken: "{prefix}&#FF5555Голограмма &#B865FF{name} &#FF5555уже существует."
 hologram-not-found: "{prefix}&#FF5555Голограмма &#B865FF{name} &#FF5555не найдена."
 hologram-not-owned: "{prefix}&#FF5555Это не ваша голограмма."
-no-active-hologram: "{prefix}&#FF5555Нет активной голограммы. &#E0B0FF/dholo create <название>"
+no-active-hologram: "{prefix}&#FF5555Сначала выберите голограмму: &#E0B0FFПКМ&#FF5555 — ID, &#E0B0FFЛКМ&#FF5555 — GUI, или &#E0B0FF/dholo gui <id>"
+hologram-deleted: "{prefix}&#55FF55Голограмма &#B865FF{name} &#55FF55удалена."
+hologram-id-shown: "{prefix}&#55FF55ID голограммы: &#FFFFFF{id}"
 invalid-line-number: "{prefix}&#FF5555Неверный номер строки: &#B865FF{line} &#FF5555(1-&#FFFFFF{max}&#FF5555)."
 cannot-edit-owner-line: "{prefix}&#FF5555Последняя строка (подпись владельца) не редактируется."
 player-not-found: "{prefix}&#FF5555Игрок &#B865FF{player} &#FF5555не найден."
@@ -70,7 +73,12 @@ gui.list.entry.lore:
 gui.list.previous.name: "&#B865FF&l← &#E0B0FFПредыдущая"
 gui.list.next.name: "&#B865FF&lСледующая &#E0B0FF→"
 gui.list.close.name: "&#FF5555&l✕ &#FF8888Закрыть"
-gui.list.empty.name: "&#9B7EDEНет голограмм"
+gui.list.empty.name: "&#9B7EDE&l◆ &#E8C5FFНет голограмм &#9B7EDE&l◆"
+gui.list.empty.lore:
+  - "&#9B7EDE▸ &#E0B0FFСоздайте голограмму в своём регионе"
+  - "&#9B7EDE▸ &#FFFFFF/dholo create &#E0B0FF<название>"
+  - ""
+  - "&#7F7F7FЗакрыть: ESC"
 
 gui.settings.title: "&#4A3060&l✦ &#B865FF&lНастройка &#E8C5FF{name} &#4A3060&l✦"
 gui.settings.lines.name: "&#B865FF&l◆ &#E8C5FFТекст голограммы &#B865FF&l◆"
@@ -83,7 +91,7 @@ gui.settings.position.lore:
   - "&#9B7EDE▸ &#D4A5FFРегион: &#FFFFFF{region}"
   - "&#9B7EDE▸ &#D4A5FFX: &#FFFFFF{x} &#7F7F7F| &#D4A5FFY: &#FFFFFF{y} &#7F7F7F| &#D4A5FFZ: &#FFFFFF{z}"
   - ""
-  - "&#55FF55✔ &#E0B0FFСдвинуть в пределах региона"
+  - "&#55FF55✔ &#E0B0FFСдвинуть и повернуть в пределах региона"
 gui.settings.enabled.name: "&#B865FF&l◆ &#E8C5FFВидимость &#B865FF&l◆"
 gui.settings.enabled.lore-on:
   - "&#55FF55● &#E0B0FFВключена"
@@ -93,18 +101,14 @@ gui.settings.enabled.lore-off:
   - "&#9B7EDE▸ &#D4A5FFНажмите, чтобы показать"
 gui.settings.see-through.name: "&#B865FF&l◆ &#E8C5FFСквозь блоки &#B865FF&l◆"
 gui.settings.see-through.lore-on:
-  - "&#55FF55● &#E0B0FFВидна через стены"
+  - "&#55FF55● &#E0B0FFВидна через стены и лёд"
 gui.settings.see-through.lore-off:
-  - "&#FF5555● &#E0B0FFНе видна через стены"
+  - "&#FF5555● &#E0B0FFНе видна через блоки"
 gui.settings.text-shadow.name: "&#B865FF&l◆ &#E8C5FFТень текста &#B865FF&l◆"
 gui.settings.text-shadow.lore-on:
   - "&#55FF55● &#E0B0FFТень включена"
 gui.settings.text-shadow.lore-off:
   - "&#9B7EDE● &#E0B0FFТень выключена"
-gui.settings.billboard.name: "&#B865FF&l◆ &#E8C5FFПоворот &#B865FF&l◆"
-gui.settings.billboard.lore:
-  - "&#9B7EDE▸ &#D4A5FFРежим: &#FFFFFF{value}"
-  - "&#55FF55✔ &#E0B0FFНажмите для смены"
 gui.settings.background.name: "&#B865FF&l◆ &#E8C5FFФон &#B865FF&l◆"
 gui.settings.background.lore:
   - "&#9B7EDE▸ &#D4A5FFСтиль: &#FFFFFF{value}"
@@ -127,28 +131,77 @@ gui.settings.locked.lore:
 gui.settings.unsupported.lore:
   - "&#FF5555✕ &#E0B0FFНедоступно с backend {backend}"
 gui.settings.back.name: "&#B865FF&l← &#E0B0FFНазад"
+gui.settings.delete.name: "&#FF5555&l◆ &#FF8888Удалить голограмму &#FF5555&l◆"
+gui.settings.delete.lore:
+  - "&#9B7EDE▸ &#D4A5FFID: &#FFFFFF{name}"
+  - "&#FF5555✕ &#FF8888Без восстановления"
+  - "&#55FF55✔ &#E0B0FFНажмите для удаления"
 gui.settings.close.name: "&#FF5555&l✕ &#FF8888Закрыть"
 
 gui.lines.title: "&#4A3060&l✦ &#B865FF&lСтроки &#E8C5FF{name} &#7F7F7F({count}/{max}) &#4A3060&l✦"
 gui.lines.entry.name: "&#B865FF&l◆ &#E8C5FFСтрока &#FFFFFF{line} &#B865FF&l◆"
 gui.lines.entry.lore:
   - "&#9B7EDE▸ &#D4A5FFТекст: &#FFFFFF{text}"
-  - "&#9B7EDE▸ &#D4A5FFЛимит: &#FFFFFF{max}"
   - ""
   - "&#55FF55ЛКМ &#7F7F7F— &#E0B0FFизменить"
-  - "&#FF5555&lПКМ &#7F7F7Fили &#FF5555&lQ &#7F7F7F— &#FF8888удалить"
-  - "&#FFAA00Shift+ЛКМ &#7F7F7F— &#E0B0FFвыше"
-  - "&#FFAA00Shift+ПКМ &#7F7F7F— &#E0B0FFниже"
-gui.lines.add.name: "&#B865FF&l◆ &#55FF55+ &#E8C5FFДобавить строку &#B865FF&l◆"
-gui.lines.add.lore:
-  - "&#9B7EDE▸ &#D4A5FFСтрок: &#FFFFFF{count}&#7F7F7F/&#FFFFFF{max}"
-  - "&#55FF55✔ &#E0B0FFНажмите и введите текст в чат"
+  - "&#FF5555ПКМ &#7F7F7F— &#FF8888удалить"
+  - "&#B865FFСКМ &#7F7F7F— &#9B7EDEскрыть"
+gui.lines.entry-hidden.name: "&#9B7EDE&l◆ &#7F7F7FСтрока &#FFFFFF{line} &#9B7EDE&l◆"
+gui.lines.entry-hidden.lore:
+  - "&#9B7EDE▸ &#D4A5FFТекст: &#FFFFFF{text}"
+  - ""
+  - "&#FF5555&l● &#FF5555Скрыта на голограмме"
+  - "&#55FF55ЛКМ &#7F7F7F— &#E0B0FFизменить"
+  - "&#FF5555ПКМ &#7F7F7F— &#FF8888удалить"
+  - "&#B865FFСКМ &#7F7F7F— &#55FF55показать"
+gui.lines.line-hidden: "{prefix}&#9B7EDEСтрока &#B865FF{line} &#9B7EDEскрыта. &#7F7F7FСКМ — показать."
+gui.lines.line-shown: "{prefix}&#55FF55Строка &#B865FF{line} &#55FF55снова видна."
+gui.lines.empty.name: "&#7F7F7F&l◆ &#9B7EDEСлот &#FFFFFF{line} &#7F7F7F&l◆"
+gui.lines.empty.lore:
+  - "&#9B7EDE▸ &#7F7F7FСтрока не задана"
+  - ""
+  - "&#55FF55ЛКМ &#7F7F7F— &#E0B0FFдобавить текст"
+gui.lines.delete-confirm.title: "&#4A3060&l✦ &#FF5555Удалить строку &#FFFFFF{line}&#FF5555? &#4A3060&l✦"
+gui.lines.delete-confirm.info.name: "&#B865FF&l◆ &#E8C5FFСтрока &#FFFFFF{line} &#B865FF&l◆"
+gui.lines.delete-confirm.info.lore:
+  - "&#9B7EDE▸ &#D4A5FFТекст: &#FFFFFF{text}"
+  - ""
+  - "&#FF5555Подтвердите удаление"
+gui.lines.delete-confirm.yes.name: "&#55FF55&l✔ &#E0B0FFДа, удалить"
+gui.lines.delete-confirm.yes.lore:
+  - "&#FF5555Строка &#FFFFFF{line} &#FF5555будет удалена"
+gui.lines.delete-confirm.no.name: "&#FF5555&l✕ &#E0B0FFНет, отмена"
+gui.lines.delete-confirm.no.lore:
+  - "&#9B7EDE▸ &#E0B0FFВернуться к списку строк"
 gui.lines.previous.name: "&#B865FF&l← &#E0B0FFПредыдущая"
 gui.lines.next.name: "&#B865FF&lСледующая &#E0B0FF→"
 gui.lines.back.name: "&#B865FF&l← &#E0B0FFНастройки"
-gui.lines.close.name: "&#FF5555&l✕ &#FF8888Закрыть"
+gui.lines.reserved.hint.name: "&#FFD700&l◆ &#E8C5FFСтукни меня &#FFD700&l◆"
+gui.lines.reserved.hint.lore-on:
+  - "&#E8C5FF{text}"
+  - ""
+  - "&#55FF55&l● &#55FF55Показано"
+  - "&#9B7EDEНажмите, чтобы скрыть"
+gui.lines.reserved.hint.lore-off:
+  - "&#E8C5FF{text}"
+  - ""
+  - "&#FF5555&l● &#FF5555Скрыто"
+  - "&#9B7EDEНажмите, чтобы показать"
+gui.lines.reserved.owner.name: "&#B865FF&l◆ &#E8C5FFГолограмма игрока &#B865FF&l◆"
+gui.lines.reserved.owner.lore-on:
+  - "&#E8C5FF{text}"
+  - ""
+  - "&#55FF55&l● &#55FF55Показано"
+  - "&#9B7EDEНажмите, чтобы скрыть"
+gui.lines.reserved.owner.lore-off:
+  - "&#E8C5FF{text}"
+  - ""
+  - "&#FF5555&l● &#FF5555Скрыто"
+  - "&#9B7EDEНажмите, чтобы показать"
 gui.lines.empty-preview: "&#9B7EDE(пусто)"
 gui.lines.prompt-edit: "{prefix}&#E0B0FFВведите новый текст для строки &#B865FF{line}&#E0B0FF. &#9B7EDEОтмена: &#FFFFFF{cancel}"
+gui.lines.prompt-add-above: "{prefix}&#E0B0FFВведите текст новой строки &#FFFFFF{line} &#E0B0FF(сверху). &#9B7EDEОтмена: &#FFFFFF{cancel}"
+gui.lines.prompt-add-below: "{prefix}&#E0B0FFВведите текст новой строки в конец. &#9B7EDEОтмена: &#FFFFFF{cancel}"
 gui.lines.prompt-add: "{prefix}&#E0B0FFВведите текст новой строки. &#9B7EDEОтмена: &#FFFFFF{cancel}"
 gui.lines.cancel-word: "отмена"
 gui.lines.cancelled: "{prefix}&#9B7EDEРедактирование отменено."
@@ -181,6 +234,11 @@ gui.position.right.name: "&#B865FF&l▶ &#E8C5FFВправо &#B865FF&l▶"
 gui.position.right.lore:
   - "&#9B7EDE▸ &#D4A5FFСдвиг вправо на &#FFFFFF{step}"
   - "&#55FF55✔ &#E0B0FFОтносительно вашего взгляда"
+gui.position.billboard.name: "&#B865FF&l◆ &#E8C5FFПоворот &#B865FF&l◆"
+gui.position.billboard.lore:
+  - "&#9B7EDE▸ &#D4A5FFРежим: &#FFFFFF{value}"
+  - "&#E0B0FFМеняйте здесь — сразу видно результат"
+  - "&#55FF55✔ &#E0B0FFНажмите для смены"
 gui.position.back.name: "&#B865FF&l← &#E0B0FFНастройки"
 gui.position.close.name: "&#FF5555&l✕ &#FF8888Закрыть"
 
@@ -197,13 +255,24 @@ gui.setting-label.alignment: "выравнивание"
 gui.setting-label.shadow: "тень блока"
 
 gui.enum.billboard.FIXED: "фиксированный"
-gui.enum.billboard.CENTER: "центр"
-gui.enum.billboard.HORIZONTAL: "горизонтальный"
-gui.enum.billboard.VERTICAL: "вертикальный"
+gui.enum.billboard.FOLLOW_PLAYER: "следить за игроком"
+gui.enum.billboard.CENTER: "следить за игроком"
+gui.enum.billboard.HORIZONTAL: "горизонтальный наклон"
+gui.enum.billboard.VERTICAL: "только по горизонтали"
 gui.enum.alignment.LEFT: "слева"
 gui.enum.alignment.CENTER: "по центру"
 gui.enum.alignment.RIGHT: "справа"
 gui.enum.background.transparent: "прозрачный"
 gui.enum.background.dark: "тёмный"
-gui.enum.background.blue: "синий"
+gui.enum.background.white: "белый"
+gui.enum.background.gray: "серый"
+gui.enum.background.red: "красный"
+gui.enum.background.orange: "оранжевый"
 gui.enum.background.gold: "золотой"
+gui.enum.background.green: "зелёный"
+gui.enum.background.lime: "лаймовый"
+gui.enum.background.cyan: "бирюзовый"
+gui.enum.background.blue: "синий"
+gui.enum.background.purple: "фиолетовый"
+gui.enum.background.pink: "розовый"
+gui.enum.background.magenta: "пурпурный"

@@ -118,6 +118,9 @@ public final class DholoCommandRegistry {
             return List.of();
         }
         DholoCommandContext context = context(sender, null, "dholo", args);
+        if (!context.hasAccess()) {
+            return List.of();
+        }
         if (args.length == 1) {
             List<String> suggestions = new ArrayList<>();
             for (DholoSubcommand subcommand : rootOrdered) {
@@ -126,7 +129,12 @@ public final class DholoCommandRegistry {
                         continue;
                     }
                 }
-                suggestions.addAll(subcommand.aliases());
+                for (String alias : subcommand.aliases()) {
+                    if (!shouldSuggest(context, alias)) {
+                        continue;
+                    }
+                    suggestions.add(alias);
+                }
             }
             return filterPrefix(suggestions, args[0]);
         }
@@ -135,6 +143,15 @@ public final class DholoCommandRegistry {
             return List.of();
         }
         return root.get().tabComplete(context, args.length - 1);
+    }
+
+    private static boolean shouldSuggest(DholoCommandContext context, String alias) {
+        if (!"create".equalsIgnoreCase(alias)) {
+            return true;
+        }
+        return context.player()
+                .map(player -> context.hasAdminPermission() || context.hologramService().hasHologramSlot(player))
+                .orElse(false);
     }
 
     private static List<String> filterPrefix(List<String> options, String prefix) {

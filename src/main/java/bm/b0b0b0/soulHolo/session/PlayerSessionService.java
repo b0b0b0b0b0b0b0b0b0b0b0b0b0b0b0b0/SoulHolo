@@ -19,4 +19,8 @@ public final class PlayerSessionService {
     public void clear(UUID playerId) {
         activeHologramByPlayer.remove(playerId);
     }
+
+    public void clearActiveHologram(UUID hologramId) {
+        activeHologramByPlayer.entrySet().removeIf(entry -> hologramId.equals(entry.getValue()));
+    }
 }

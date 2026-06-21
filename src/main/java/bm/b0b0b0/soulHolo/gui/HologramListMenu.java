@@ -63,11 +63,6 @@ public final class HologramListMenu implements SoulHoloGuiHolder {
     public void handleClick(int slot) {
         Integer previousSlot = layout.slots().get("previous");
         Integer nextSlot = layout.slots().get("next");
-        Integer closeSlot = layout.slots().get("close");
-        if (closeSlot != null && slot == closeSlot) {
-            viewer.closeInventory();
-            return;
-        }
         if (previousSlot != null && slot == previousSlot && page > 0) {
             page--;
             redraw();
@@ -104,6 +99,10 @@ public final class HologramListMenu implements SoulHoloGuiHolder {
     private void redraw() {
         inventory.clear();
         fillBackground();
+        if (holograms.isEmpty()) {
+            placeEmptyState();
+            return;
+        }
         List<Integer> contentSlots = layout.contentSlots();
         int pageSize = contentSlots.size();
         int start = page * pageSize;
@@ -132,14 +131,25 @@ public final class HologramListMenu implements SoulHoloGuiHolder {
                     Map.of()
             ));
         }
-        if (layout.slots().containsKey("close")) {
-            inventory.setItem(layout.slots().get("close"), items.button(
-                    layout.material("close"),
-                    "gui.list.close.name",
-                    null,
-                    Map.of()
-            ));
+    }
+
+    private void placeEmptyState() {
+        Integer emptySlot = layout.slots().get("empty");
+        if (emptySlot == null) {
+            List<Integer> contentSlots = layout.contentSlots();
+            if (!contentSlots.isEmpty()) {
+                emptySlot = contentSlots.get(0);
+            }
         }
+        if (emptySlot == null) {
+            return;
+        }
+        inventory.setItem(emptySlot, items.button(
+                layout.material("empty"),
+                "gui.list.empty.name",
+                "gui.list.empty.lore",
+                Map.of()
+        ));
     }
 
     private ItemStack entryItem(Material material, PrivateHologram hologram) {
@@ -151,7 +161,7 @@ public final class HologramListMenu implements SoulHoloGuiHolder {
                 Map.of(
                         "name", hologram.name(),
                         "region", hologram.regionId(),
-                        "lines", String.valueOf(hologram.lines().size()),
+                        "lines", String.valueOf(hologram.countFilledLines()),
                         "status", messages.plain(statusKey, Map.of())
                 )
         );

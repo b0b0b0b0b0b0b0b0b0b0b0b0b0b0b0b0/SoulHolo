@@ -2,6 +2,7 @@ package bm.b0b0b0.soulHolo.service;
 
 import bm.b0b0b0.soulHolo.config.PluginConfig;
 import bm.b0b0b0.soulHolo.message.MessageService;
+import bm.b0b0b0.soulHolo.permission.SoulHoloPermissions;
 import bm.b0b0b0.soulHolo.model.DisplaySettingKey;
 import bm.b0b0b0.soulHolo.model.HologramDisplaySettings;
 import bm.b0b0b0.soulHolo.model.PrivateHologram;
@@ -45,7 +46,7 @@ public final class HologramDisplayService {
         }
         PrivateHologram hologram = optional.get();
         if (!hologram.ownerId().equals(player.getUniqueId())
-                && !player.hasPermission(config.adminPermission())) {
+                && !SoulHoloPermissions.hasAdmin(player)) {
             return Optional.empty();
         }
         return optional;
@@ -83,9 +84,7 @@ public final class HologramDisplayService {
         if (!ensureAllowed(player, hologram, key)) {
             return false;
         }
-        List<PluginConfig.BackgroundPreset> allowed = config.backgroundPresets().stream()
-                .filter(preset -> access.canUseBackgroundPreset(player, preset.permission()))
-                .toList();
+        List<PluginConfig.BackgroundPreset> allowed = config.backgroundPresets();
         if (allowed.isEmpty()) {
             messages.send(player, "gui-setting-locked", Map.of("setting", access.settingLabel(key)));
             return false;

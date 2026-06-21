@@ -8,6 +8,7 @@ import bm.b0b0b0.soulHolo.model.HologramDisplaySettings;
 import bm.b0b0b0.soulHolo.model.PrivateHologram;
 import bm.b0b0b0.soulHolo.service.DisplaySettingAccess;
 import bm.b0b0b0.soulHolo.service.GuiNavigationService;
+import bm.b0b0b0.soulHolo.service.GuiOpenResult;
 import bm.b0b0b0.soulHolo.service.HologramDisplayService;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -72,24 +73,25 @@ public final class HologramSettingsMenu implements SoulHoloGuiHolder {
 
     public void handleClick(int slot, ClickType clickType) {
         Integer backSlot = layout.slots().get("back");
-        Integer closeSlot = layout.slots().get("close");
         if (backSlot != null && slot == backSlot) {
             navigation.openList(viewer, 0);
             return;
         }
-        if (closeSlot != null && slot == closeSlot) {
-            viewer.closeInventory();
-            return;
-        }
         if (matchesSlot("lines", slot)) {
-            if (access.canEditLines(viewer)) {
-                navigation.openLines(viewer, hologram, 0);
+            if (navigation.openLines(viewer, hologram, 0) != GuiOpenResult.OPENED) {
+                messages.send(viewer, "gui-lines-no-permission");
             }
             return;
         }
         if (matchesSlot("position", slot)) {
-            if (access.canMovePosition(viewer)) {
-                navigation.openPosition(viewer, hologram);
+            if (navigation.openPosition(viewer, hologram) != GuiOpenResult.OPENED) {
+                messages.send(viewer, "gui-position-no-permission");
+            }
+            return;
+        }
+        if (matchesSlot("delete", slot)) {
+            if (navigation.deleteHologram(viewer, hologram) == GuiOpenResult.NOT_OWNED) {
+                messages.send(viewer, "hologram-not-owned");
             }
             return;
         }
@@ -107,12 +109,6 @@ public final class HologramSettingsMenu implements SoulHoloGuiHolder {
         }
         if (matchesSlot("text-shadow", slot)) {
             if (displayService.toggleBoolean(viewer, hologram, DisplaySettingKey.TEXT_SHADOW)) {
-                redraw();
-            }
-            return;
-        }
-        if (matchesSlot("billboard", slot)) {
-            if (displayService.cycleBillboard(viewer, hologram)) {
                 redraw();
             }
             return;
@@ -158,6 +154,7 @@ public final class HologramSettingsMenu implements SoulHoloGuiHolder {
         fillBackground();
         placeLinesButton();
         placePositionButton();
+        placeDeleteButton();
         HologramDisplaySettings settings = hologram.displaySettings();
         placeToggle("enabled", DisplaySettingKey.ENABLED, "enabled-on", "enabled-off",
                 settings.enabled(), settings.enabled());
@@ -165,8 +162,6 @@ public final class HologramSettingsMenu implements SoulHoloGuiHolder {
                 settings.seeThrough(), settings.seeThrough());
         placeToggle("text-shadow", DisplaySettingKey.TEXT_SHADOW, "text-shadow-on", "text-shadow-off",
                 settings.textShadow(), settings.textShadow());
-        placeValue("billboard", DisplaySettingKey.BILLBOARD, "billboard",
-                Map.of("value", enumLabel("billboard", settings.billboard().name())));
         placeValue("background", DisplaySettingKey.BACKGROUND, "background",
                 Map.of("value", backgroundLabel(settings.backgroundPreset())));
         placeValue("scale-down", DisplaySettingKey.SCALE, "scale",
@@ -183,14 +178,6 @@ public final class HologramSettingsMenu implements SoulHoloGuiHolder {
             inventory.setItem(layout.slots().get("back"), items.button(
                     layout.material("back"),
                     "gui.settings.back.name",
-                    null,
-                    Map.of()
-            ));
-        }
-        if (layout.slots().containsKey("close")) {
-            inventory.setItem(layout.slots().get("close"), items.button(
-                    layout.material("close"),
-                    "gui.settings.close.name",
                     null,
                     Map.of()
             ));
@@ -233,6 +220,19 @@ public final class HologramSettingsMenu implements SoulHoloGuiHolder {
                 "gui.settings." + messageKey + ".name",
                 "gui.settings." + messageKey + ".lore",
                 values
+        ));
+    }
+
+    private void placeDeleteButton() {
+        Integer slot = layout.slots().get("delete");
+        if (slot == null) {
+            return;
+        }
+        inventory.setItem(slot, items.button(
+                layout.material("delete"),
+                "gui.settings.delete.name",
+                "gui.settings.delete.lore",
+                Map.of("name", hologram.name())
         ));
     }
 
@@ -300,7 +300,7 @@ public final class HologramSettingsMenu implements SoulHoloGuiHolder {
                 "gui.settings.lines.name",
                 "gui.settings.lines.lore",
                 Map.of(
-                        "count", String.valueOf(hologram.lines().size()),
+                        "count", String.valueOf(hologram.countFilledLines()),
                         "max", String.valueOf(hologramServiceMaxLines())
                 )
         ));
@@ -318,7 +318,7 @@ public final class HologramSettingsMenu implements SoulHoloGuiHolder {
                 "gui.settings.lines.name",
                 null,
                 Map.of(
-                        "count", String.valueOf(hologram.lines().size()),
+                        "count", String.valueOf(hologram.countFilledLines()),
                         "max", String.valueOf(hologramServiceMaxLines())
                 )
         );

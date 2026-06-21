@@ -4,6 +4,7 @@ import bm.b0b0b0.soulHolo.config.PluginConfig;
 import bm.b0b0b0.soulHolo.hologram.HologramBackend;
 import bm.b0b0b0.soulHolo.message.MessageService;
 import bm.b0b0b0.soulHolo.model.DisplaySettingKey;
+import bm.b0b0b0.soulHolo.permission.SoulHoloPermissions;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
@@ -13,11 +14,16 @@ public final class DisplaySettingAccess {
     private PluginConfig config;
     private HologramBackend backend;
     private final MessageService messages;
+    private final LimitService limitService;
 
-    public DisplaySettingAccess(PluginConfig config, HologramBackend backend, MessageService messages) {
+    public DisplaySettingAccess(PluginConfig config,
+                                HologramBackend backend,
+                                MessageService messages,
+                                LimitService limitService) {
         this.config = config;
         this.backend = backend;
         this.messages = messages;
+        this.limitService = limitService;
     }
 
     public void reload(PluginConfig config, HologramBackend backend) {
@@ -26,37 +32,43 @@ public final class DisplaySettingAccess {
     }
 
     public boolean isAdmin(Player player) {
-        return player.isOp() || player.hasPermission(config.adminPermission());
+        return SoulHoloPermissions.hasAdmin(player);
     }
 
     public boolean canOpenGui(Player player) {
-        return isAdmin(player) || player.hasPermission(config.guiOpenPermission());
+        return hasBaseAccess(player);
     }
 
     public boolean canEditLines(Player player) {
-        return isAdmin(player) || player.hasPermission(config.guiLinesPermission());
+        if (!hasBaseAccess(player)) {
+            return false;
+        }
+        return isAdmin(player) || player.hasPermission(SoulHoloPermissions.GUI_LINES);
     }
 
     public boolean canMovePosition(Player player) {
-        return isAdmin(player) || player.hasPermission(config.guiPositionPermission());
+        if (!hasBaseAccess(player)) {
+            return false;
+        }
+        return isAdmin(player) || player.hasPermission(SoulHoloPermissions.GUI_POSITION);
     }
 
     public boolean canChange(Player player, DisplaySettingKey key) {
-        if (isAdmin(player)) {
-            return true;
-        }
-        String permission = config.guiSettingPermissions().get(key);
-        if (permission == null || permission.isBlank()) {
+        if (!hasBaseAccess(player)) {
             return false;
         }
-        return player.hasPermission(permission);
-    }
-
-    public boolean canUseBackgroundPreset(Player player, String presetPermission) {
         if (isAdmin(player)) {
             return true;
         }
-        return player.hasPermission(presetPermission);
+        return player.hasPermission(SoulHoloPermissions.guiSetting(key));
+    }
+
+    public boolean canUseBackgroundPreset(Player player, String presetId) {
+        return canChange(player, DisplaySettingKey.BACKGROUND);
+    }
+
+    private boolean hasBaseAccess(Player player) {
+        return isAdmin(player) || limitService.hasHologramSlot(player);
     }
 
     public boolean isSupported(DisplaySettingKey key) {

@@ -25,26 +25,27 @@ public final class HologramFailureMessages {
             case WORLDGUARD_MISSING -> messages.send(sender, "worldguard-missing");
             case NOT_OWNER_REGION -> messages.send(sender, "not-owner-region");
             case NO_APPLICABLE_REGION -> messages.send(sender, "no-applicable-region");
+            case HOLOGRAM_LIMIT_DENIED -> messages.send(sender, "hologram-limit-denied");
             case REGION_LIMIT -> {
                 if (sender instanceof Player player) {
-                    var tier = hologramService.tier(player);
+                    var limits = hologramService.limits(player);
                     messages.send(sender, "region-limit-reached", Map.of(
                             "region", hologramService.regionForFailure(player),
-                            "limit", String.valueOf(tier.maxHologramsPerRegion())
+                            "limit", String.valueOf(limits.maxHologramsPerRegion())
                     ));
                 }
             }
             case LINE_LIMIT -> {
                 if (sender instanceof Player player) {
                     messages.send(sender, "line-limit-reached", Map.of(
-                            "limit", String.valueOf(hologramService.tier(player).maxLines())
+                            "limit", String.valueOf(hologramService.limits(player).maxLines())
                     ));
                 }
             }
             case LINE_TOO_LONG -> {
                 if (sender instanceof Player player) {
                     messages.send(sender, "line-too-long", Map.of(
-                            "limit", String.valueOf(hologramService.tier(player).maxLineLength())
+                            "limit", String.valueOf(hologramService.limits(player).maxLineLength())
                     ));
                 }
             }
@@ -73,6 +74,7 @@ public final class HologramFailureMessages {
             case NO_PERMISSION -> messages.send(sender, "no-permission");
             case LINE_EDIT_DENIED -> messages.send(sender, "gui-lines-no-permission");
             case POSITION_DENIED -> messages.send(sender, "gui-position-no-permission");
+            case GUI_NO_PERMISSION -> messages.send(sender, "hologram-limit-denied");
             case INVALID_SETTING -> messages.send(sender, "invalid-setting");
             default -> messages.send(sender, "unknown-subcommand");
         }

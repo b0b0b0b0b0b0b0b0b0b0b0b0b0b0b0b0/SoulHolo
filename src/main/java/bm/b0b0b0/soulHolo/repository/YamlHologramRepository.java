@@ -4,6 +4,7 @@ import bm.b0b0b0.soulHolo.config.PluginConfig;
 import bm.b0b0b0.soulHolo.core.PluginExecutor;
 import bm.b0b0b0.soulHolo.model.HologramDisplaySettings;
 import bm.b0b0b0.soulHolo.model.PrivateHologram;
+import bm.b0b0b0.soulHolo.model.RegionWorldKey;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.TextDisplay;
@@ -21,6 +22,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -31,6 +33,7 @@ public final class YamlHologramRepository implements HologramRepository {
     private final File storageDir;
     private final Map<UUID, PrivateHologram> byId = new ConcurrentHashMap<>();
     private final Map<String, UUID> byName = new ConcurrentHashMap<>();
+    private final Map<RegionWorldKey, Set<UUID>> byRegion = new ConcurrentHashMap<>();
     private final Map<UUID, CompletableFuture<Void>> saveChains = new ConcurrentHashMap<>();
 
     public YamlHologramRepository(JavaPlugin plugin, PluginExecutor executor) {
@@ -44,6 +47,7 @@ public final class YamlHologramRepository implements HologramRepository {
         return CompletableFuture.runAsync(() -> {
             byId.clear();
             byName.clear();
+            byRegion.clear();
             saveChains.clear();
             if (!storageDir.exists() && !storageDir.mkdirs()) {
                 plugin.getLogger().warning("Could not create holograms folder");
@@ -92,6 +96,7 @@ public final class YamlHologramRepository implements HologramRepository {
             return;
         }
         byName.remove(removed.name());
+        unindexRegion(removed);
         saveChains.compute(id, (ignored, chain) -> {
             CompletableFuture<Void> previous = chain == null ? CompletableFuture.completedFuture(null) : chain;
             return previous.thenRunAsync(() -> deleteFile(id), executor.io());
@@ -146,6 +151,27 @@ public final class YamlHologramRepository implements HologramRepository {
     }
 
     @Override
+    public Set<RegionWorldKey> regionKeys() {
+        return Set.copyOf(byRegion.keySet());
+    }
+
+    @Override
+    public List<PrivateHologram> hologramsInRegion(RegionWorldKey key) {
+        Set<UUID> ids = byRegion.get(key);
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        List<PrivateHologram> holograms = new ArrayList<>();
+        for (UUID id : ids) {
+            PrivateHologram hologram = byId.get(id);
+            if (hologram != null) {
+                holograms.add(hologram);
+            }
+        }
+        return holograms;
+    }
+
+    @Override
     public Optional<PrivateHologram> findNearestOwned(PlayerContext context) {
         if (context.location().getWorld() == null) {
             return Optional.empty();
@@ -176,6 +202,20 @@ public final class YamlHologramRepository implements HologramRepository {
     private void index(PrivateHologram hologram) {
         byId.put(hologram.id(), hologram);
         byName.put(hologram.name(), hologram.id());
+        RegionWorldKey key = RegionWorldKey.from(hologram);
+        byRegion.computeIfAbsent(key, ignored -> ConcurrentHashMap.newKeySet()).add(hologram.id());
+    }
+
+    private void unindexRegion(PrivateHologram hologram) {
+        RegionWorldKey key = RegionWorldKey.from(hologram);
+        Set<UUID> ids = byRegion.get(key);
+        if (ids == null) {
+            return;
+        }
+        ids.remove(hologram.id());
+        if (ids.isEmpty()) {
+            byRegion.remove(key);
+        }
     }
 
     private File fileFor(UUID id) {
@@ -202,6 +242,7 @@ public final class YamlHologramRepository implements HologramRepository {
         double y = yaml.getDouble("y");
         double z = yaml.getDouble("z");
         List<String> lines = yaml.getStringList("lines");
+        List<Integer> hiddenLines = yaml.getIntegerList("hidden-lines");
         String backendId = yaml.getString("backend-id");
         HologramDisplaySettings displaySettings = readDisplay(yaml.getConfigurationSection("display"));
         if (worldName == null || worldName.isBlank()) {
@@ -220,7 +261,8 @@ public final class YamlHologramRepository implements HologramRepository {
                 z,
                 lines,
                 backendId,
-                displaySettings
+                displaySettings,
+                hiddenLines
         );
     }
 
@@ -230,7 +272,7 @@ public final class YamlHologramRepository implements HologramRepository {
             return settings;
         }
         settings.setEnabled(section.getBoolean("enabled", true));
-        settings.setSeeThrough(section.getBoolean("see-through", false));
+        settings.setSeeThrough(section.getBoolean("see-through", true));
         settings.setTextShadow(section.getBoolean("text-shadow", false));
         settings.setBillboard(HologramDisplaySettings.DisplayBillboard.fromConfig(section.getString("billboard")));
         settings.setBackgroundPreset(section.getString("background-preset", "transparent"));
@@ -244,6 +286,8 @@ public final class YamlHologramRepository implements HologramRepository {
         settings.setTextAlignment(parseAlignment(section.getString("text-alignment", "CENTER")));
         settings.setShadowRadius((float) section.getDouble("shadow-radius", 0.0));
         settings.setShadowStrength((float) section.getDouble("shadow-strength", 0.0));
+        settings.setShowHintLine(section.getBoolean("show-hint-line", true));
+        settings.setShowOwnerLine(section.getBoolean("show-owner-line", true));
         return settings;
     }
 
@@ -271,6 +315,7 @@ public final class YamlHologramRepository implements HologramRepository {
         yaml.set("y", hologram.y());
         yaml.set("z", hologram.z());
         yaml.set("lines", new ArrayList<>(hologram.lines()));
+        yaml.set("hidden-lines", new ArrayList<>(hologram.hiddenLines()));
         yaml.set("backend-id", hologram.backendId());
         writeDisplay(yaml, hologram.displaySettings());
         try {
@@ -294,5 +339,7 @@ public final class YamlHologramRepository implements HologramRepository {
         yaml.set("display.text-alignment", settings.textAlignment().name());
         yaml.set("display.shadow-radius", settings.shadowRadius());
         yaml.set("display.shadow-strength", settings.shadowStrength());
+        yaml.set("display.show-hint-line", settings.showHintLine());
+        yaml.set("display.show-owner-line", settings.showOwnerLine());
     }
 }

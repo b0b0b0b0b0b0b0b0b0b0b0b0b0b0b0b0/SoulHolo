@@ -7,6 +7,7 @@ public enum HologramFailure {
     NOT_OWNER_REGION,
     NO_APPLICABLE_REGION,
     REGION_LIMIT,
+    HOLOGRAM_LIMIT_DENIED,
     LINE_LIMIT,
     LINE_TOO_LONG,
     BLACKLISTED,
@@ -23,5 +24,6 @@ public enum HologramFailure {
     LINE_EDIT_DENIED,
     POSITION_DENIED,
     INVALID_SETTING,
-    SETTING_DENIED
+    SETTING_DENIED,
+    GUI_NO_PERMISSION
 }

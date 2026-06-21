@@ -69,18 +69,8 @@ public final class HologramLinesMenu implements SoulHoloGuiHolder {
         Integer previousSlot = layout.slots().get("previous");
         Integer nextSlot = layout.slots().get("next");
         Integer backSlot = layout.slots().get("back");
-        Integer closeSlot = layout.slots().get("close");
-        Integer addSlot = layout.slots().get("add");
-        if (closeSlot != null && slot == closeSlot) {
-            viewer.closeInventory();
-            return;
-        }
         if (backSlot != null && slot == backSlot) {
             navigation.openSettings(viewer, hologram);
-            return;
-        }
-        if (addSlot != null && slot == addSlot) {
-            lineGuiService.beginAdd(viewer, hologram);
             return;
         }
         if (previousSlot != null && slot == previousSlot && page > 0) {
@@ -93,88 +83,99 @@ public final class HologramLinesMenu implements SoulHoloGuiHolder {
             redraw();
             return;
         }
-        Integer lineNumber = lineNumberAtSlot(slot);
-        if (lineNumber == null) {
-            return;
-        }
-        if (clickType == ClickType.SHIFT_LEFT) {
-            if (lineGuiService.moveLine(viewer, hologram, lineNumber, -1)) {
+        Integer hintSlot = layout.slots().get("hint-toggle");
+        if (hintSlot != null && slot == hintSlot) {
+            if (lineGuiService.toggleHintLine(viewer, hologram)) {
                 redraw();
             }
             return;
         }
-        if (clickType == ClickType.SHIFT_RIGHT) {
-            if (lineGuiService.moveLine(viewer, hologram, lineNumber, 1)) {
+        Integer ownerSlot = layout.slots().get("owner-toggle");
+        if (ownerSlot != null && slot == ownerSlot) {
+            if (lineGuiService.toggleOwnerLine(viewer, hologram)) {
                 redraw();
             }
             return;
         }
-        if (clickType == ClickType.RIGHT || clickType == ClickType.DROP || clickType == ClickType.CONTROL_DROP) {
-            if (lineGuiService.deleteLine(viewer, hologram, lineNumber)) {
-                if (page >= totalPages()) {
-                    page = Math.max(0, totalPages() - 1);
-                }
-                redraw();
-            }
+        Integer contentIndex = contentIndexAtSlot(slot);
+        if (contentIndex == null) {
             return;
         }
+        int lineNumber = lineNumberForContentIndex(contentIndex);
+        if (lineNumber > lineGuiService.maxLines(viewer)) {
+            return;
+        }
+        boolean filled = lineGuiService.hasLineContent(hologram, lineNumber);
         if (clickType == ClickType.LEFT) {
-            lineGuiService.beginEdit(viewer, hologram, lineNumber);
+            if (filled) {
+                lineGuiService.beginEdit(viewer, hologram, lineNumber);
+            } else {
+                lineGuiService.beginAddAt(viewer, hologram, lineNumber);
+            }
+            return;
+        }
+        if (clickType == ClickType.RIGHT && filled) {
+            navigation.openLineDeleteConfirm(viewer, hologram, lineNumber, page);
+            return;
+        }
+        if (clickType == ClickType.MIDDLE && filled) {
+            if (lineGuiService.toggleLineHidden(viewer, hologram, lineNumber)) {
+                redraw();
+            }
         }
     }
 
-    private Integer lineNumberAtSlot(int slot) {
+    private Integer contentIndexAtSlot(int slot) {
         List<Integer> contentSlots = layout.contentSlots();
-        int pageSize = contentSlots.size();
-        int start = page * pageSize;
         for (int index = 0; index < contentSlots.size(); index++) {
-            if (contentSlots.get(index) != slot) {
-                continue;
+            if (contentSlots.get(index) == slot) {
+                return index;
             }
-            int lineIndex = start + index;
-            if (lineIndex >= hologram.lines().size()) {
-                return null;
-            }
-            return lineIndex + 1;
         }
         return null;
+    }
+
+    private int lineNumberForContentIndex(int contentIndex) {
+        int pageSize = layout.contentSlots().size();
+        return page * pageSize + contentIndex + 1;
     }
 
     private void redraw() {
         inventory.clear();
         fillBackground();
+        drawReservedToggles();
         List<Integer> contentSlots = layout.contentSlots();
         int pageSize = contentSlots.size();
-        int start = page * pageSize;
-        Material entryMaterial = layout.material("entry");
+        int maxLines = lineGuiService.maxLines(viewer);
         for (int index = 0; index < contentSlots.size(); index++) {
-            int lineIndex = start + index;
-            if (lineIndex >= hologram.lines().size()) {
+            int lineNumber = page * pageSize + index + 1;
+            if (lineNumber > maxLines) {
                 break;
             }
-            int lineNumber = lineIndex + 1;
-            String preview = preview(hologram.lines().get(lineIndex));
-            inventory.setItem(contentSlots.get(index), items.button(
-                    entryMaterial,
-                    "gui.lines.entry.name",
-                    "gui.lines.entry.lore",
-                    Map.of(
-                            "line", String.valueOf(lineNumber),
-                            "text", preview,
-                            "max", String.valueOf(lineGuiService.maxLines(viewer))
-                    )
-            ));
-        }
-        if (layout.slots().containsKey("add")) {
-            inventory.setItem(layout.slots().get("add"), items.button(
-                    layout.material("add"),
-                    "gui.lines.add.name",
-                    "gui.lines.add.lore",
-                    Map.of(
-                            "count", String.valueOf(hologram.lines().size()),
-                            "max", String.valueOf(lineGuiService.maxLines(viewer))
-                    )
-            ));
+            if (lineGuiService.hasLineContent(hologram, lineNumber)) {
+                String preview = preview(lineAt(hologram, lineNumber));
+                boolean hidden = lineGuiService.isLineHidden(hologram, lineNumber);
+                inventory.setItem(contentSlots.get(index), items.button(
+                        layout.material(hidden ? "entry-hidden" : "entry"),
+                        hidden ? "gui.lines.entry-hidden.name" : "gui.lines.entry.name",
+                        hidden ? "gui.lines.entry-hidden.lore" : "gui.lines.entry.lore",
+                        Map.of(
+                                "line", String.valueOf(lineNumber),
+                                "text", preview,
+                                "max", String.valueOf(maxLines)
+                        )
+                ));
+            } else {
+                inventory.setItem(contentSlots.get(index), items.button(
+                        layout.material("empty"),
+                        "gui.lines.empty.name",
+                        "gui.lines.empty.lore",
+                        Map.of(
+                                "line", String.valueOf(lineNumber),
+                                "max", String.valueOf(maxLines)
+                        )
+                ));
+            }
         }
         if (layout.slots().containsKey("previous") && page > 0) {
             inventory.setItem(layout.slots().get("previous"), items.button(
@@ -200,14 +201,41 @@ public final class HologramLinesMenu implements SoulHoloGuiHolder {
                     Map.of()
             ));
         }
-        if (layout.slots().containsKey("close")) {
-            inventory.setItem(layout.slots().get("close"), items.button(
-                    layout.material("close"),
-                    "gui.lines.close.name",
-                    null,
-                    Map.of()
+    }
+
+    private void drawReservedToggles() {
+        Integer hintSlot = layout.slots().get("hint-toggle");
+        if (hintSlot != null) {
+            boolean visible = lineGuiService.hintLineVisible(hologram);
+            inventory.setItem(hintSlot, items.toggle(
+                    layout.material(visible ? "reserved-shown" : "reserved-hidden"),
+                    "gui.lines.reserved.hint.name",
+                    "gui.lines.reserved.hint.lore-on",
+                    "gui.lines.reserved.hint.lore-off",
+                    visible,
+                    Map.of("text", lineGuiService.hintLinePreview(viewer, hologram))
             ));
         }
+        Integer ownerSlot = layout.slots().get("owner-toggle");
+        if (ownerSlot != null) {
+            boolean visible = lineGuiService.ownerLineVisible(hologram);
+            inventory.setItem(ownerSlot, items.toggle(
+                    layout.material(visible ? "reserved-shown" : "reserved-hidden"),
+                    "gui.lines.reserved.owner.name",
+                    "gui.lines.reserved.owner.lore-on",
+                    "gui.lines.reserved.owner.lore-off",
+                    visible,
+                    Map.of("text", lineGuiService.ownerLinePreview(viewer, hologram))
+            ));
+        }
+    }
+
+    private String lineAt(PrivateHologram hologram, int lineNumber) {
+        if (lineNumber < 1 || lineNumber > hologram.lines().size()) {
+            return "";
+        }
+        String line = hologram.lines().get(lineNumber - 1);
+        return line == null ? "" : line;
     }
 
     private String preview(String raw) {
@@ -231,13 +259,14 @@ public final class HologramLinesMenu implements SoulHoloGuiHolder {
 
     private int totalPages() {
         int pageSize = Math.max(1, layout.contentSlots().size());
-        return Math.max(1, (int) Math.ceil(hologram.lines().size() / (double) pageSize));
+        int maxLines = lineGuiService.maxLines(viewer);
+        return Math.max(1, (int) Math.ceil(maxLines / (double) pageSize));
     }
 
     private Map<String, String> titlePlaceholders() {
         return Map.of(
                 "name", hologram.name(),
-                "count", String.valueOf(hologram.lines().size()),
+                "count", String.valueOf(lineGuiService.countFilledLines(hologram)),
                 "max", String.valueOf(lineGuiService.maxLines(viewer)),
                 "page", String.valueOf(page + 1),
                 "pages", String.valueOf(totalPages())

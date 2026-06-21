@@ -20,8 +20,12 @@ public final class LineEditSessionService {
         pendingByPlayer.put(playerId, new PendingLineEdit(hologramId, lineNumber, Mode.EDIT));
     }
 
+    public void beginInsert(UUID playerId, UUID hologramId, int lineNumber) {
+        pendingByPlayer.put(playerId, new PendingLineEdit(hologramId, lineNumber, Mode.ADD));
+    }
+
     public void beginAdd(UUID playerId, UUID hologramId) {
-        pendingByPlayer.put(playerId, new PendingLineEdit(hologramId, 0, Mode.ADD));
+        beginInsert(playerId, hologramId, 0);
     }
 
     public PendingLineEdit pending(UUID playerId) {

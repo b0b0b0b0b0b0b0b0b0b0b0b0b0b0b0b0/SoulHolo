@@ -1,7 +1,9 @@
 package bm.b0b0b0.soulHolo.service;
 
 import bm.b0b0b0.soulHolo.config.PluginConfig;
+import bm.b0b0b0.soulHolo.permission.SoulHoloPermissions;
 import org.bukkit.entity.Player;
+import org.bukkit.permissions.PermissionAttachmentInfo;
 
 public final class LimitService {
 
@@ -15,20 +17,16 @@ public final class LimitService {
         this.config = config;
     }
 
-    public PluginConfig.LimitTier resolve(Player player) {
-        PluginConfig.LimitTier best = config.defaultLimit();
-        int bestScore = player.hasPermission(best.permission()) ? score(best) : -1;
-        for (PluginConfig.LimitTier tier : config.limitTiers()) {
-            if (!player.hasPermission(tier.permission())) {
-                continue;
-            }
-            int tierScore = score(tier);
-            if (tierScore > bestScore) {
-                best = tier;
-                bestScore = tierScore;
-            }
-        }
-        return best;
+    public PluginConfig.PlayerLimits resolve(Player player) {
+        return new PluginConfig.PlayerLimits(
+                resolveHologramLimit(player),
+                config.maxLines(),
+                config.maxLineLength()
+        );
+    }
+
+    public boolean hasHologramSlot(Player player) {
+        return resolve(player).maxHologramsPerRegion() > 0;
     }
 
     public int nameMinLength() {
@@ -43,8 +41,8 @@ public final class LimitService {
         return config.namePattern().pattern();
     }
 
-    private static int score(PluginConfig.LimitTier tier) {
-        return tier.maxLines() * 100000 + tier.maxHologramsPerRegion() * 1000 + tier.maxLineLength();
+    public PluginConfig.LimitCountScope countScope() {
+        return config.limitCountScope();
     }
 
     public boolean isNameValid(String name) {
@@ -58,7 +56,32 @@ public final class LimitService {
         return config.namePattern().matcher(name).matches();
     }
 
-    public PluginConfig.LimitCountScope countScope() {
-        return config.limitCountScope();
+    private int resolveHologramLimit(Player player) {
+        String prefix = SoulHoloPermissions.LIMIT_PREFIX;
+        int best = -1;
+        for (PermissionAttachmentInfo attachment : player.getEffectivePermissions()) {
+            if (!attachment.getValue()) {
+                continue;
+            }
+            String permission = attachment.getPermission();
+            if (!permission.startsWith(prefix)) {
+                continue;
+            }
+            String suffix = permission.substring(prefix.length());
+            if (suffix.isEmpty()) {
+                continue;
+            }
+            try {
+                int value = Integer.parseInt(suffix);
+                if (value > best) {
+                    best = value;
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        if (best >= 0) {
+            return best;
+        }
+        return 0;
     }
 }

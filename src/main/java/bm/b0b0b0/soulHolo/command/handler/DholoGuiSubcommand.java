@@ -22,9 +22,7 @@ public final class DholoGuiSubcommand extends AbstractPlayerSubcommand {
             context.failures().send(player, failure, name, 0);
             return true;
         }
-        if (name == null || name.isBlank()) {
-            context.messages().send(player, "gui-opened");
-        }
+        context.messages().send(player, "gui-opened");
         return true;
     }
 

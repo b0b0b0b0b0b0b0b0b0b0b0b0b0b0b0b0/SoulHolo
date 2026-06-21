@@ -20,12 +20,16 @@ public final class HologramDisplaySettings {
     private TextDisplay.TextAlignment textAlignment;
     private float shadowRadius;
     private float shadowStrength;
+    private boolean showHintLine;
+    private boolean showOwnerLine;
 
     public HologramDisplaySettings() {
         this.enabled = true;
-        this.seeThrough = false;
+        this.seeThrough = true;
         this.textShadow = false;
-        this.billboard = DisplayBillboard.CENTER;
+        this.showHintLine = true;
+        this.showOwnerLine = true;
+        this.billboard = DisplayBillboard.FOLLOW_PLAYER;
         this.backgroundPreset = "transparent";
         this.backgroundRed = 0;
         this.backgroundGreen = 0;
@@ -52,6 +56,8 @@ public final class HologramDisplaySettings {
         copy.textAlignment = textAlignment;
         copy.shadowRadius = shadowRadius;
         copy.shadowStrength = shadowStrength;
+        copy.showHintLine = showHintLine;
+        copy.showOwnerLine = showOwnerLine;
         return copy;
     }
 
@@ -84,7 +90,7 @@ public final class HologramDisplaySettings {
     }
 
     public void setBillboard(DisplayBillboard billboard) {
-        this.billboard = billboard == null ? DisplayBillboard.CENTER : billboard;
+        this.billboard = billboard == null ? DisplayBillboard.FOLLOW_PLAYER : billboard;
     }
 
     public String backgroundPreset() {
@@ -150,11 +156,27 @@ public final class HologramDisplaySettings {
         this.shadowStrength = shadowStrength;
     }
 
+    public boolean showHintLine() {
+        return showHintLine;
+    }
+
+    public void setShowHintLine(boolean showHintLine) {
+        this.showHintLine = showHintLine;
+    }
+
+    public boolean showOwnerLine() {
+        return showOwnerLine;
+    }
+
+    public void setShowOwnerLine(boolean showOwnerLine) {
+        this.showOwnerLine = showOwnerLine;
+    }
+
     public enum DisplayBillboard {
         FIXED(Display.Billboard.FIXED),
-        CENTER(Display.Billboard.CENTER),
-        HORIZONTAL(Display.Billboard.HORIZONTAL),
-        VERTICAL(Display.Billboard.VERTICAL);
+        FOLLOW_PLAYER(Display.Billboard.CENTER),
+        VERTICAL(Display.Billboard.VERTICAL),
+        HORIZONTAL(Display.Billboard.HORIZONTAL);
 
         private final Display.Billboard bukkit;
 
@@ -172,13 +194,17 @@ public final class HologramDisplaySettings {
         }
 
         public static DisplayBillboard fromConfig(String raw) {
-            if (raw == null) {
-                return CENTER;
+            if (raw == null || raw.isBlank()) {
+                return FOLLOW_PLAYER;
+            }
+            String normalized = raw.trim().toUpperCase(Locale.ROOT);
+            if ("CENTER".equals(normalized)) {
+                return FOLLOW_PLAYER;
             }
             try {
-                return valueOf(raw.trim().toUpperCase(Locale.ROOT));
+                return valueOf(normalized);
             } catch (IllegalArgumentException exception) {
-                return CENTER;
+                return FOLLOW_PLAYER;
             }
         }
     }

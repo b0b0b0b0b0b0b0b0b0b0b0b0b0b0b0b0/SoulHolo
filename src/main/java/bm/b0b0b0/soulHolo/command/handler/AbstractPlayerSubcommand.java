@@ -23,13 +23,13 @@ public abstract class AbstractPlayerSubcommand implements DholoSubcommand {
         if (denyUnlessPlayer(context)) {
             return true;
         }
-        if (requiresUsePermission() && denyUnlessUse(context)) {
+        if (requiresAccessPermission() && denyUnlessAccess(context)) {
             return true;
         }
         return run(context, context.player().orElseThrow());
     }
 
-    protected boolean requiresUsePermission() {
+    protected boolean requiresAccessPermission() {
         return !admin;
     }
 

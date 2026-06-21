@@ -2,25 +2,25 @@ package bm.b0b0b0.soulHolo.config;
 
 import bm.b0b0b0.soulHolo.config.settings.GuiGeneralSettings;
 import bm.b0b0b0.soulHolo.config.settings.SoulHoloSettings;
-import bm.b0b0b0.soulHolo.model.DisplaySettingKey;
-import org.bukkit.Material;
 
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 public final class PluginConfig {
 
     private final HologramBackendType backendType;
     private final String ownerLine;
+    private final String defaultCreateLine;
     private final double nearestRadius;
+    private final float clickWidth;
+    private final float clickHeight;
+    private final float clickHeightPerLine;
     private final boolean loggingEnabled;
     private final boolean loggingFile;
-    private final LimitTier defaultLimit;
-    private final List<LimitTier> limitTiers;
+    private final int maxLines;
+    private final int maxLineLength;
     private final LimitCountScope limitCountScope;
     private final List<String> blacklistLiterals;
     private final List<Pattern> blacklistRegex;
@@ -29,12 +29,10 @@ public final class PluginConfig {
     private final Pattern namePattern;
     private final int restoreBatchSize;
     private final int ioThreads;
-    private final String guiOpenPermission;
-    private final String guiLinesPermission;
-    private final String guiPositionPermission;
+    private final boolean regionGuardPurgeEnabled;
+    private final int regionGuardIntervalSeconds;
+    private final int regionGuardBatchSize;
     private final double positionStep;
-    private final String usePermission;
-    private final String adminPermission;
     private final String adminFallbackRegionId;
     private final float shadowLowRadius;
     private final float shadowLowStrength;
@@ -43,21 +41,21 @@ public final class PluginConfig {
     private final float scaleMin;
     private final float scaleMax;
     private final float scaleStep;
-    private final Map<DisplaySettingKey, String> guiSettingPermissions;
     private final List<BackgroundPreset> backgroundPresets;
     private final GuiLayoutConfig guiLayout;
 
     public PluginConfig(SoulHoloSettings main, GuiGeneralSettings gui) {
         this.backendType = HologramBackendType.fromConfig(main.hologramBackend);
         this.ownerLine = main.ownerLine;
+        this.defaultCreateLine = main.defaultCreateLine;
         this.nearestRadius = main.selection.nearestRadius;
+        this.clickWidth = main.selection.clickWidth;
+        this.clickHeight = main.selection.clickHeight;
+        this.clickHeightPerLine = main.selection.clickHeightPerLine;
         this.loggingEnabled = main.logging.enabled;
         this.loggingFile = main.logging.file;
-        this.defaultLimit = toTier(main.limits.defaultTier);
-        this.limitTiers = new ArrayList<>();
-        for (SoulHoloSettings.LimitTierSettings tier : main.limits.tiers.values()) {
-            limitTiers.add(toTier(tier));
-        }
+        this.maxLines = Math.max(1, main.limits.maxLines);
+        this.maxLineLength = Math.max(1, main.limits.maxLineLength);
         this.limitCountScope = LimitCountScope.fromConfig(main.limits.countScope);
         this.blacklistLiterals = List.copyOf(main.blacklist.literals);
         this.blacklistRegex = compileRegex(main.blacklist.regex);
@@ -66,12 +64,10 @@ public final class PluginConfig {
         this.namePattern = Pattern.compile(main.name.pattern);
         this.restoreBatchSize = Math.max(1, main.performance.restoreBatchSize);
         this.ioThreads = Math.max(1, main.performance.ioThreads);
-        this.guiOpenPermission = main.gui.openPermission;
-        this.guiLinesPermission = main.gui.linesPermission;
-        this.guiPositionPermission = main.gui.positionPermission;
+        this.regionGuardPurgeEnabled = main.performance.regionGuardPurgeEnabled;
+        this.regionGuardIntervalSeconds = Math.max(1, main.performance.regionGuardIntervalSeconds);
+        this.regionGuardBatchSize = Math.max(1, main.performance.regionGuardBatchSize);
         this.positionStep = main.gui.position.step;
-        this.usePermission = main.permissions.use;
-        this.adminPermission = main.permissions.admin;
         this.adminFallbackRegionId = main.admin.fallbackRegionId;
         this.shadowLowRadius = main.gui.shadowCycle.lowRadius;
         this.shadowLowStrength = main.gui.shadowCycle.lowStrength;
@@ -80,31 +76,8 @@ public final class PluginConfig {
         this.scaleMin = main.gui.scale.min;
         this.scaleMax = main.gui.scale.max;
         this.scaleStep = main.gui.scale.step;
-        this.guiSettingPermissions = readGuiPermissions(main.gui.settings);
         this.backgroundPresets = readBackgroundPresets(main.gui.backgroundPresets);
         this.guiLayout = GuiLayoutConfig.from(gui);
-    }
-
-    private static LimitTier toTier(SoulHoloSettings.LimitTierSettings tier) {
-        return new LimitTier(
-                tier.permission,
-                tier.maxHologramsPerRegion,
-                tier.maxLines,
-                tier.maxLineLength
-        );
-    }
-
-    private static Map<DisplaySettingKey, String> readGuiPermissions(SoulHoloSettings.GuiSettingPermissions settings) {
-        Map<DisplaySettingKey, String> map = new EnumMap<>(DisplaySettingKey.class);
-        map.put(DisplaySettingKey.ENABLED, settings.enabled);
-        map.put(DisplaySettingKey.SEE_THROUGH, settings.seeThrough);
-        map.put(DisplaySettingKey.TEXT_SHADOW, settings.textShadow);
-        map.put(DisplaySettingKey.BILLBOARD, settings.billboard);
-        map.put(DisplaySettingKey.BACKGROUND, settings.background);
-        map.put(DisplaySettingKey.SCALE, settings.scale);
-        map.put(DisplaySettingKey.TEXT_ALIGNMENT, settings.textAlignment);
-        map.put(DisplaySettingKey.SHADOW, settings.shadow);
-        return map;
     }
 
     private static List<BackgroundPreset> readBackgroundPresets(List<SoulHoloSettings.BackgroundPresetSettings> presets) {
@@ -112,7 +85,6 @@ public final class PluginConfig {
         for (SoulHoloSettings.BackgroundPresetSettings preset : presets) {
             result.add(new BackgroundPreset(
                     preset.id,
-                    preset.permission,
                     preset.red,
                     preset.green,
                     preset.blue,
@@ -141,8 +113,24 @@ public final class PluginConfig {
         return ownerLine;
     }
 
+    public String defaultCreateLine() {
+        return defaultCreateLine;
+    }
+
     public double nearestRadius() {
         return nearestRadius;
+    }
+
+    public float clickWidth() {
+        return clickWidth;
+    }
+
+    public float clickHeight() {
+        return clickHeight;
+    }
+
+    public float clickHeightPerLine() {
+        return clickHeightPerLine;
     }
 
     public boolean loggingEnabled() {
@@ -153,12 +141,12 @@ public final class PluginConfig {
         return loggingFile;
     }
 
-    public LimitTier defaultLimit() {
-        return defaultLimit;
+    public int maxLines() {
+        return maxLines;
     }
 
-    public List<LimitTier> limitTiers() {
-        return limitTiers;
+    public int maxLineLength() {
+        return maxLineLength;
     }
 
     public LimitCountScope limitCountScope() {
@@ -173,28 +161,20 @@ public final class PluginConfig {
         return ioThreads;
     }
 
-    public String guiOpenPermission() {
-        return guiOpenPermission;
+    public boolean regionGuardPurgeEnabled() {
+        return regionGuardPurgeEnabled;
     }
 
-    public String guiLinesPermission() {
-        return guiLinesPermission;
+    public int regionGuardIntervalSeconds() {
+        return regionGuardIntervalSeconds;
     }
 
-    public String guiPositionPermission() {
-        return guiPositionPermission;
+    public int regionGuardBatchSize() {
+        return regionGuardBatchSize;
     }
 
     public double positionStep() {
         return positionStep;
-    }
-
-    public String usePermission() {
-        return usePermission;
-    }
-
-    public String adminPermission() {
-        return adminPermission;
     }
 
     public String adminFallbackRegionId() {
@@ -229,10 +209,6 @@ public final class PluginConfig {
         return scaleStep;
     }
 
-    public Map<DisplaySettingKey, String> guiSettingPermissions() {
-        return guiSettingPermissions;
-    }
-
     public List<BackgroundPreset> backgroundPresets() {
         return backgroundPresets;
     }
@@ -261,10 +237,10 @@ public final class PluginConfig {
         return guiLayout;
     }
 
-    public record LimitTier(String permission, int maxHologramsPerRegion, int maxLines, int maxLineLength) {
+    public record PlayerLimits(int maxHologramsPerRegion, int maxLines, int maxLineLength) {
     }
 
-    public record BackgroundPreset(String id, String permission, int red, int green, int blue, int alpha) {
+    public record BackgroundPreset(String id, int red, int green, int blue, int alpha) {
     }
 
     public enum LimitCountScope {

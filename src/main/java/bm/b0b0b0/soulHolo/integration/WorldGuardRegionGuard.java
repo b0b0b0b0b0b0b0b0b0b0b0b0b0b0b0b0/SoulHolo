@@ -9,6 +9,7 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldguard.protection.regions.RegionQuery;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
@@ -69,8 +70,20 @@ public final class WorldGuardRegionGuard implements RegionGuard {
         if (!available || location.getWorld() == null || regionId == null || regionId.isBlank()) {
             return false;
         }
+        return regionExistsInWorld(regionId, location.getWorld().getName());
+    }
+
+    @Override
+    public boolean regionExistsInWorld(String regionId, String worldName) {
+        if (!available || regionId == null || regionId.isBlank() || worldName == null || worldName.isBlank()) {
+            return false;
+        }
+        World world = Bukkit.getWorld(worldName);
+        if (world == null) {
+            return true;
+        }
         var manager = WorldGuard.getInstance().getPlatform().getRegionContainer()
-                .get(BukkitAdapter.adapt(location.getWorld()));
+                .get(BukkitAdapter.adapt(world));
         return manager != null && manager.getRegion(regionId) != null;
     }
 

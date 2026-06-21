@@ -29,7 +29,11 @@ public final class DholoCreateSubcommand extends AbstractPlayerSubcommand {
             context.messages().send(player, "usage-create");
             return true;
         }
-        return finishCreate(context, player, player, context.arg(1));
+        if (!context.hasAdminPermission() && !context.hologramService().hasHologramSlot(player)) {
+            context.failures().send(player, HologramFailure.HOLOGRAM_LIMIT_DENIED, context.arg(1), 0);
+            return true;
+        }
+        return finishCreate(context, player, player, context.arg(1), context.hasAdminPermission());
     }
 
     private boolean runAdmin(DholoCommandContext context) {
@@ -52,14 +56,15 @@ public final class DholoCreateSubcommand extends AbstractPlayerSubcommand {
             owner = context.player().get();
         }
         org.bukkit.entity.Player actor = context.player().orElse(owner);
-        return finishCreate(context, actor, owner, context.arg(2));
+        return finishCreate(context, actor, owner, context.arg(2), true);
     }
 
     private boolean finishCreate(DholoCommandContext context,
                                org.bukkit.entity.Player actor,
                                org.bukkit.entity.Player owner,
-                               String rawName) {
-        HologramFailure failure = context.hologramService().create(actor, rawName, owner, admin);
+                               String rawName,
+                               boolean bypassLimits) {
+        HologramFailure failure = context.hologramService().create(actor, rawName, owner, bypassLimits);
         if (failure != HologramFailure.NONE) {
             context.failures().send(context.sender(), failure, rawName, 0);
             return true;

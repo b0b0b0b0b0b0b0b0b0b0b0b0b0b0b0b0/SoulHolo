@@ -58,11 +58,11 @@ public interface DholoSubcommand {
         return true;
     }
 
-    default boolean denyUnlessUse(DholoCommandContext context) {
-        if (context.hasUsePermission()) {
+    default boolean denyUnlessAccess(DholoCommandContext context) {
+        if (context.hasAccess()) {
             return false;
         }
-        context.messages().send(context.sender(), "no-permission");
+        context.messages().send(context.sender(), "hologram-limit-denied");
         return true;
     }
 
